@@ -1,0 +1,63 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  firstName         String
+  lastName          String
+  accountNumber     String   @unique
+  balance           Float    @default(0)
+  routingNumber     String   @default("062000080")
+  emailVerified     Boolean  @default(false)
+  verificationCode  String?
+  isAdmin           Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  sentTransfers     Transfer[] @relation("sender")
+  receivedTransfers Transfer[] @relation("receiver")
+  notifications     Notification[]
+
+  @@index([accountNumber])
+  @@index([email])
+}
+
+model Transfer {
+  id              String   @id @default(cuid())
+  senderId        String
+  receiverId      String
+  amount          Float
+  description     String?
+  status          String   @default("completed")
+  createdAt       DateTime @default(now())
+  
+  sender          User     @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver        User     @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
